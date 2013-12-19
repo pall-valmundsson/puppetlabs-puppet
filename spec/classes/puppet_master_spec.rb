@@ -21,11 +21,13 @@ describe 'puppet::master', :type => :class do
                 :autosign               => 'true',
                 :certname               => 'test.example.com',
                 :storeconfigs           => 'true',
-                :storeconfigs_dbserver  => 'test.example.com'
-
+                :storeconfigs_dbserver  => 'test.example.com',
             }
         end
+        it { should contain_class('puppet::params') }
         it {
+            Puppet::Util::Log.level = :debug
+            Puppet::Util::Log.newdestination(:console)
             should contain_user('puppet').with(
                 :ensure => 'present',
                 :uid    => nil,
@@ -132,6 +134,56 @@ describe 'puppet::master', :type => :class do
               ['Class[Puppet::Passenger]', 'Class[Puppet::Storeconfigs]']
             )
             should contain_anchor('puppet::master::end')
+        }
+         it {
+                should contain_class('apache')
+                should contain_class('puppet::params')
+                should contain_class('apache::mod::passenger')
+                should contain_class('apache::mod::ssl')
+                should contain_exec('Certificate_Check').with(
+                    :command =>
+                      "puppet cert clean #{params[:certname]} ; " +
+                      "puppet certificate --ca-location=local --dns_alt_names=puppet generate #{params[:certname]}" +
+                      " && puppet cert sign --allow-dns-alt-names #{params[:certname]}" +
+                      " && puppet certificate --ca-location=local find #{params[:certname]}",
+                    :unless  => "/bin/ls /var/lib/puppet/ssl/certs/#{params[:certname]}.pem",
+                    :path    => '/usr/bin:/usr/local/bin',
+                    :require  => "File[/etc/puppet/puppet.conf]"
+                )
+                should contain_file('/etc/puppet/rack/public/').with(
+                    :ensure => 'directory',
+                    :owner  => 'puppet',
+                    :group  => 'puppet',
+                    :mode   => '0755'
+                )
+                should contain_file('/etc/puppet/rack').with(
+                    :ensure => 'directory',
+                    :owner  => 'puppet',
+                    :group  => 'puppet',
+                    :mode   => '0755'
+                )
+                 should contain_file('/etc/puppet/rack/config.ru').with(
+                    :ensure => 'present',
+                    :owner  => 'puppet',
+                    :group  => 'puppet',
+                    :mode   => '0644'
+                )
+                should contain_ini_setting('puppetmastersslclient').with(
+                    :ensure  => 'present',
+                    :section => 'master',
+                    :setting => 'ssl_client_header',
+                    :path    => '/etc/puppet/puppet.conf',
+                    :value   =>'SSL_CLIENT_S_DN',
+                    :require => "File[/etc/puppet/puppet.conf]"
+                )
+                should contain_ini_setting('puppetmastersslclientverify').with(
+                    :ensure  => 'present',
+                    :section => 'master',
+                    :setting => 'ssl_client_verify_header',
+                    :path    => '/etc/puppet/puppet.conf',
+                    :value   =>'SSL_CLIENT_VERIFY',
+                    :require => "File[/etc/puppet/puppet.conf]"
+                )
         }
     end
 
@@ -264,6 +316,10 @@ describe 'puppet::master', :type => :class do
               ['Class[Puppet::Passenger]', 'Class[Puppet::Storeconfigs]']
             )
             should contain_anchor('puppet::master::end')
+        }
+         it {
+                should contain_file('/var/lib/puppet/reports')
+                should contain_file('/var/lib/puppet/ssl/ca/requests')
         }
     end
 end
