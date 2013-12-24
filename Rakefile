@@ -19,6 +19,7 @@ PuppetLint.configuration.send('disable_variables_not_enclosed')
 PuppetLint.configuration.send('disable_autoloader_layout')
 
 PuppetLint.configuration.ignore_paths = ["vendor/**/*.pp"]
+PuppetSyntax.exclude_paths = ["vendor/**/*"]
 
 
 desc "Run syntax, lint, and spec tests."
