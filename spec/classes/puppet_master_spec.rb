@@ -1,7 +1,19 @@
 require 'spec_helper'
 
 describe 'puppet::master', :type => :class do
-
+    let(:default_params) do
+        {
+            :version                => 'present',
+            :puppet_master_package  => 'puppetmaster',
+            :puppet_master_service  => 'puppetmaster',
+            :modulepath             => '/etc/puppet/modules',
+            :manifest               => '/etc/puppet/manifests/site.pp',
+            :autosign               => 'true',
+            :certname               => 'test.example.com',
+            :storeconfigs           => 'true',
+            :storeconfigs_dbserver  => 'test.example.com',
+        }
+    end
     context 'on Debian operatingsystems' do
         let(:facts) do
             {
@@ -11,23 +23,13 @@ describe 'puppet::master', :type => :class do
                 :concat_basedir => '/nde',
             }
         end
-        let (:params) do
-            {
-                :version                => 'present',
-                :puppet_master_package  => 'puppetmaster',
-                :puppet_master_service  => 'puppetmaster',
-                :modulepath             => '/etc/puppet/modules',
-                :manifest               => '/etc/puppet/manifests/site.pp',
-                :autosign               => 'true',
-                :certname               => 'test.example.com',
-                :storeconfigs           => 'true',
-                :storeconfigs_dbserver  => 'test.example.com',
-            }
+        let(:params) do
+            default_params.merge({})
         end
         it { should contain_class('puppet::params') }
         it {
-            Puppet::Util::Log.level = :debug
-            Puppet::Util::Log.newdestination(:console)
+            #Puppet::Util::Log.level = :debug
+            #Puppet::Util::Log.newdestination(:console)
             should contain_user('puppet').with(
                 :ensure => 'present',
                 :uid    => nil,
@@ -130,6 +132,13 @@ describe 'puppet::master', :type => :class do
                 :path    => '/etc/puppet/puppet.conf',
                 :value   => 'true'
             )
+            should contain_ini_setting('puppetmasterca').with(
+                :ensure  => 'present',
+                :section => 'master',
+                :setting => 'ca',
+                :path    => '/etc/puppet/puppet.conf',
+                :value   => 'true'
+            )
             should contain_anchor('puppet::master::begin').with_before(
               ['Class[Puppet::Passenger]', 'Class[Puppet::Storeconfigs]']
             )
@@ -185,6 +194,25 @@ describe 'puppet::master', :type => :class do
                     :require => "File[/etc/puppet/puppet.conf]"
                 )
         }
+        context 'without CA' do
+            let(:params) do
+                default_params.merge({
+                    :puppetca_enabled => false,
+                    :puppet_master_ca_server => 'puppetca.local'
+                })
+            end
+            it {
+                should contain_ini_setting('puppetmasterca').with(
+                    :ensure  => 'present',
+                    :section => 'master',
+                    :setting => 'ca',
+                    :path    => '/etc/puppet/puppet.conf',
+                    :value   => 'false'
+                )
+                should contain_puppet_auth('Allow all to download CA CRL')
+                # TODO add vhost test
+            }
+        end
     end
 
     context 'on RedHat operatingsystems' do
@@ -196,19 +224,8 @@ describe 'puppet::master', :type => :class do
                 :concat_basedir => '/nde',
             }
         end
-        let (:params) do
-            {
-                :version                => 'present',
-                :puppet_master_package  => 'puppetmaster',
-                :puppet_master_service  => 'puppetmaster',
-                :modulepath             => '/etc/puppet/modules',
-                :manifest               => '/etc/puppet/manifests/site.pp',
-                :autosign               => 'true',
-                :certname               => 'test.example.com',
-                :storeconfigs           => 'true',
-                :storeconfigs_dbserver  => 'test.example.com'
-
-            }
+        let(:params) do
+            default_params.merge({})
         end
         it {
             should contain_user('puppet').with(
@@ -309,6 +326,13 @@ describe 'puppet::master', :type => :class do
                 :ensure  => 'present',
                 :section => 'master',
                 :setting => 'pluginsync',
+                :path    => '/etc/puppet/puppet.conf',
+                :value   => 'true'
+            )
+            should contain_ini_setting('puppetmasterca').with(
+                :ensure  => 'present',
+                :section => 'master',
+                :setting => 'ca',
                 :path    => '/etc/puppet/puppet.conf',
                 :value   => 'true'
             )

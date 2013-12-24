@@ -68,7 +68,10 @@ class puppet::master (
   $pluginsync               = true,
   $parser                   = $::puppet::params::parser,
   $puppetdb_startup_timeout = '60',
-  $puppetdb_strict_validation = $::puppet::params::puppetdb_strict_validation
+  $puppetdb_strict_validation = $::puppet::params::puppetdb_strict_validation,
+  $puppetca_enabled         = $::puppet::params::puppetca_enabled,
+  $puppet_master_ca_server  = undef,
+  $puppet_master_ca_port    = '8140'
 ) inherits puppet::params {
 
   anchor { 'puppet::master::begin': }
@@ -233,6 +236,23 @@ class puppet::master (
       ensure  => present,
       setting => 'reporturl',
       value   => $reporturl,
+    }
+  }
+
+  ini_setting {'puppetmasterca':
+    ensure  => present,
+    section => 'master',
+    setting => 'ca',
+    value   => $puppetca_enabled,
+  }
+
+  if (! $puppetca_enabled) {
+    puppet_auth { 'Allow all to download CA CRL':
+      ensure => present,
+      path => '/certificate_revocation_list',
+      authenticated => 'any',
+      allow => '*',
+      methods => 'find',
     }
   }
 

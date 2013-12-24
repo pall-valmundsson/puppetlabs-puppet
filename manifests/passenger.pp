@@ -43,6 +43,7 @@ class puppet::passenger(
   include puppet::params
   class { 'apache::mod::passenger': passenger_max_pool_size => 12, }
   include apache::mod::ssl
+  include apache::mod::proxy
 
   if $::osfamily == 'redhat' {
     file{'/var/lib/puppet/reports':
@@ -97,6 +98,19 @@ class puppet::passenger(
     mode   => '0755',
   }
 
+  if $::puppet::master::puppetca_enabled {
+    $puppetca_proxy_pass = undef
+  } else {
+    if ! $::puppet::master::puppet_master_ca_server {
+      fail('Puppet CA not enabled but no remote CA server supplied!')
+    } else {
+      $puppetca_proxy_pass = [
+        { 'path' => '^/([^/]+/certificate.*)$',
+          'url' => "https://${::puppet::master::puppet_master_ca_server}:${::puppet::master::puppet_master_ca_port}/\$1" }
+      ]
+    }
+  }
+
   apache::vhost { "puppet-${certname}":
     port               => $puppet_passenger_port,
     priority           => '40',
@@ -109,6 +123,8 @@ class puppet::passenger(
     ssl_chain          => "${puppet_ssldir}/ca/ca_crt.pem",
     ssl_ca             => "${puppet_ssldir}/ca/ca_crt.pem",
     ssl_crl            => "${puppet_ssldir}/ca/ca_crl.pem",
+    ssl_proxyengine    => !$::puppet::master::puppetca_enabled,
+    proxy_pass         => $puppetca_proxy_pass,
     rack_base_uris     => '/',
     custom_fragment    => template('puppet/apache_custom_fragment.erb'),
     require            => [ File['/etc/puppet/rack/config.ru'], File[$puppet_conf] ],

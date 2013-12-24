@@ -27,6 +27,15 @@ running through webrick. In which case run a single puppet run using
         storeconfigs              => true,
     }
 
+## Remote CA for masters ##
+    class { 'puppet::master':
+        puppetca_enabled        => false,
+        puppet_master_ca_server => 'puppetca.example.local',
+    }
+
+Remote CA configures the master according to
+http://docs.puppetlabs.com/guides/scaling_multiple_masters.html#option-2-proxy-certificate-traffic
+
 ### Master environments ###
     puppet::masterenv {'dev':
         modulepath => '/etc/puppet/evn/dev/modules',
