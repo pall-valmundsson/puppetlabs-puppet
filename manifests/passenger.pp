@@ -100,6 +100,9 @@ class puppet::passenger(
 
   if $::puppet::master::puppetca_enabled {
     $puppetca_proxy_pass = undef
+    $ssl_chain = "${puppet_ssldir}/ca/ca_crt.pem"
+    $ssl_ca    = "${puppet_ssldir}/ca/ca_crt.pem"
+    $ssl_crl   = "${puppet_ssldir}/ca/ca_crl.pem"
   } else {
     if ! $::puppet::master::puppet_master_ca_server {
       fail('Puppet CA not enabled but no remote CA server supplied!')
@@ -108,6 +111,9 @@ class puppet::passenger(
         { 'path' => '^/([^/]+/certificate.*)$',
           'url' => "https://${::puppet::master::puppet_master_ca_server}:${::puppet::master::puppet_master_ca_port}/\$1" }
       ]
+      $ssl_chain = undef
+      $ssl_ca    = undef
+      $ssl_crl   = undef
     }
   }
 
@@ -120,9 +126,9 @@ class puppet::passenger(
     ssl                => true,
     ssl_cert           => "${puppet_ssldir}/certs/${certname}.pem",
     ssl_key            => "${puppet_ssldir}/private_keys/${certname}.pem",
-    ssl_chain          => "${puppet_ssldir}/ca/ca_crt.pem",
-    ssl_ca             => "${puppet_ssldir}/ca/ca_crt.pem",
-    ssl_crl            => "${puppet_ssldir}/ca/ca_crl.pem",
+    ssl_chain          => $ssl_chain,
+    ssl_ca             => $ssl_ca,
+    ssl_crl            => $ssl_crl,
     ssl_proxyengine    => !$::puppet::master::puppetca_enabled,
     proxy_pass         => $puppetca_proxy_pass,
     rack_base_uris     => '/',
