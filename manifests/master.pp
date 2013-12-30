@@ -243,7 +243,9 @@ class puppet::master (
     ensure  => present,
     section => 'master',
     setting => 'ca',
-    value   => $puppetca_enabled,
+    # there is some issue evaluating an ini setting with a boolean value
+    # need to cast manually to string...
+    value   => inline_template("<%= scope.lookupvar('::puppet::master::puppetca_enabled') %>"),
   }
 
   if (! $puppetca_enabled) {
