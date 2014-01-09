@@ -44,6 +44,7 @@ class puppet::passenger(
   class { 'apache::mod::passenger': passenger_max_pool_size => 12, }
   include apache::mod::ssl
   include apache::mod::rewrite
+  include apache::mod::proxy
 
   if $::osfamily == 'redhat' {
     file{'/var/lib/puppet/reports':
