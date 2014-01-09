@@ -115,9 +115,9 @@ class puppet::passenger(
           'url' => "https://${::puppet::master::puppet_master_ca_server}:${::puppet::master::puppet_master_ca_port}/\$1" }
       ]
       $puppetca_rewrites = [
-        { 'rewrite_rule' => ['^/([^/]+/certificate.*)$ https://${::puppet::master::puppet_master_ca_server}:${::puppet::master::puppet_master_ca_port}/\$1 [P]'] }
+        { 'rewrite_rule' => ["^/([^/]+/certificate.*)$ https://${::puppet::master::puppet_master_ca_server}:${::puppet::master::puppet_master_ca_port}/\$1 [P]"] }
       ]
-      $puppetca_rewrite_rule = '^/([^/]+/certificate.*)$ https://${::puppet::master::puppet_master_ca_server}:${::puppet::master::puppet_master_ca_port}/\$1 [P]'
+      $puppetca_rewrite_rule = "^/([^/]+/certificate.*)$ https://${::puppet::master::puppet_master_ca_server}:${::puppet::master::puppet_master_ca_port}/\$1 [P]"
       $ssl_chain = undef
       $ssl_ca    = undef
       $ssl_crl   = undef
