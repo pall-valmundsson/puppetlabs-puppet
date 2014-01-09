@@ -43,7 +43,7 @@ class puppet::passenger(
   include puppet::params
   class { 'apache::mod::passenger': passenger_max_pool_size => 12, }
   include apache::mod::ssl
-  include apache::mod::proxy
+  include apache::mod::rewrite
 
   if $::osfamily == 'redhat' {
     file{'/var/lib/puppet/reports':
@@ -100,6 +100,7 @@ class puppet::passenger(
 
   if $::puppet::master::puppetca_enabled {
     $puppetca_proxy_pass = undef
+    $puppetca_rewrites = undef
     $ssl_chain = "${puppet_ssldir}/ca/ca_crt.pem"
     $ssl_ca    = "${puppet_ssldir}/ca/ca_crt.pem"
     $ssl_crl   = "${puppet_ssldir}/ca/ca_crl.pem"
@@ -110,6 +111,9 @@ class puppet::passenger(
       $puppetca_proxy_pass = [
         { 'path' => '^/([^/]+/certificate.*)$',
           'url' => "https://${::puppet::master::puppet_master_ca_server}:${::puppet::master::puppet_master_ca_port}/\$1" }
+      ]
+      $puppetca_rewrites = [
+        { 'rewrite_rule' => ['^/([^/]+/certificate.*)$ https://${::puppet::master::puppet_master_ca_server}:${::puppet::master::puppet_master_ca_port}/\$1 [P]'] }
       ]
       $ssl_chain = undef
       $ssl_ca    = undef
@@ -130,7 +134,8 @@ class puppet::passenger(
     ssl_ca             => $ssl_ca,
     ssl_crl            => $ssl_crl,
     ssl_proxyengine    => !$::puppet::master::puppetca_enabled,
-    proxy_pass         => $puppetca_proxy_pass,
+    #proxy_pass         => $puppetca_proxy_pass,
+    rewrites           => $puppetca_rewrites,
     rack_base_uris     => '/',
     custom_fragment    => template('puppet/apache_custom_fragment.erb'),
     require            => [ File['/etc/puppet/rack/config.ru'], File[$puppet_conf] ],
