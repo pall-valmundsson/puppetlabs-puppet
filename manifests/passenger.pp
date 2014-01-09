@@ -100,7 +100,9 @@ class puppet::passenger(
 
   if $::puppet::master::puppetca_enabled {
     $puppetca_proxy_pass = undef
+    # This will be used in the next version of puppetlabs-apache
     $puppetca_rewrites = undef
+    $puppetca_rewrite_rule = undef
     $ssl_chain = "${puppet_ssldir}/ca/ca_crt.pem"
     $ssl_ca    = "${puppet_ssldir}/ca/ca_crt.pem"
     $ssl_crl   = "${puppet_ssldir}/ca/ca_crl.pem"
@@ -115,6 +117,7 @@ class puppet::passenger(
       $puppetca_rewrites = [
         { 'rewrite_rule' => ['^/([^/]+/certificate.*)$ https://${::puppet::master::puppet_master_ca_server}:${::puppet::master::puppet_master_ca_port}/\$1 [P]'] }
       ]
+      $puppetca_rewrite_rule = '^/([^/]+/certificate.*)$ https://${::puppet::master::puppet_master_ca_server}:${::puppet::master::puppet_master_ca_port}/\$1 [P]'
       $ssl_chain = undef
       $ssl_ca    = undef
       $ssl_crl   = undef
@@ -135,7 +138,9 @@ class puppet::passenger(
     ssl_crl            => $ssl_crl,
     ssl_proxyengine    => !$::puppet::master::puppetca_enabled,
     #proxy_pass         => $puppetca_proxy_pass,
-    rewrites           => $puppetca_rewrites,
+    # Next version of puppetlabs-apache needs this instead of rewrite_rule
+    #rewrites           => $puppetca_rewrites,
+    rewrite_rule       => $puppetca_rewrite_rule,
     rack_base_uris     => '/',
     custom_fragment    => template('puppet/apache_custom_fragment.erb'),
     require            => [ File['/etc/puppet/rack/config.ru'], File[$puppet_conf] ],
